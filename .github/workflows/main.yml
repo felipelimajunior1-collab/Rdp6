@@ -1,0 +1,100 @@
+name: Configurar RDP
+on: workflow_dispatch
+
+jobs:
+  rdp-config:
+    name: Configurar Acesso Remoto
+    runs-on: windows-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Habilitar Área de Trabalho Remota
+        run: |
+          # Ativar RDP
+          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name fDenyTSConnections -Value 0 -Force
+          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -Name UserAuthentication -Value 0 -Force
+          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -Name SecurityLayer -Value 0 -Force
+          
+          # Liberar porta no Firewall
+          netsh advfirewall firewall delete rule name="Permitir RDP" || true
+          netsh advfirewall firewall add rule name="Permitir RDP" dir=in action=allow protocol=TCP localport=3389 remoteip=any
+          
+          Reiniciar Serviço de Área de Trabalho Remota
+          Restart-Service TermService -Force
+        shell: powershell
+
+      - name: Criar Usuário com Senha Forte
+        id: usuario_rdp
+        run: |
+          $letras = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+          $numeros = "0123456789"
+          $simbolos = "!@#$%&*?"
+          $todos = $letras + $numeros + $simbolos
+          $senha = -join (1..16 | ForEach-Object { $todos[(Get-Random -max $todos.Length)] })
+
+          $usuario = "UsuarioRemoto"
+          New-LocalUser -Name $usuario -Password (ConvertTo-SecureString $senha -AsPlainText -Force) -FullName "Acesso Remoto" -Description "Conta para RDP"
+          Add-LocalGroupMember -Group "Administradores" -Member $usuario
+
+          echo "USUARIO=$usuario" >> $env:GITHUB_OUTPUT
+          echo "SENHA=$senha" >> $env:GITHUB_OUTPUT
+          echo "SERVIDOR=$(hostname).local" >> $env:GITHUB_OUTPUT
+        shell: powershell
+
+      - name: Mostrar Dados de Acesso
+        run: |
+          Write-Host "=== DADOS PARA CONECTAR ==="
+          Write-Host "Servidor: ${{ steps.usuario_rdp.outputs.SERVIDOR }}"
+          Write-Host "Usuário: ${{ steps.usuario_rdp.outputs.USUARIO }}"
+          Write-Host "Senha: ${{ steps.usuario_rdp.outputs.SENHA }}"
+          Write-Host "Porta: 3389"
+name: Configurar RDP
+on: workflow_dispatch
+
+jobs:
+  rdp-config:
+    name: Configurar Acesso Remoto
+    runs-on: windows-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Habilitar Área de Trabalho Remota
+        run: |
+          # Ativar RDP
+          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name fDenyTSConnections -Value 0 -Force
+          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -Name UserAuthentication -Value 0 -Force
+          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -Name SecurityLayer -Value 0 -Force
+          
+          # Liberar porta no Firewall
+          netsh advfirewall firewall delete rule name="Permitir RDP" || true
+          netsh advfirewall firewall add rule name="Permitir RDP" dir=in action=allow protocol=TCP localport=3389 remoteip=any
+          
+          Reiniciar Serviço de Área de Trabalho Remota
+          Restart-Service TermService -Force
+        shell: powershell
+
+      - name: Criar Usuário com Senha Forte
+        id: usuario_rdp
+        run: |
+          $letras = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+          $numeros = "0123456789"
+          $simbolos = "!@#$%&*?"
+          $todos = $letras + $numeros + $simbolos
+          $senha = -join (1..16 | ForEach-Object { $todos[(Get-Random -max $todos.Length)] })
+
+          $usuario = "UsuarioRemoto"
+          New-LocalUser -Name $usuario -Password (ConvertTo-SecureString $senha -AsPlainText -Force) -FullName "Acesso Remoto" -Description "Conta para RDP"
+          Add-LocalGroupMember -Group "Administradores" -Member $usuario
+
+          echo "USUARIO=$usuario" >> $env:GITHUB_OUTPUT
+          echo "SENHA=$senha" >> $env:GITHUB_OUTPUT
+          echo "SERVIDOR=$(hostname).local" >> $env:GITHUB_OUTPUT
+        shell: powershell
+
+      - name: Mostrar Dados de Acesso
+        run: |
+          Write-Host "=== DADOS PARA CONECTAR ==="
+          Write-Host "Servidor: ${{ steps.usuario_rdp.outputs.SERVIDOR }}"
+          Write-Host "Usuário: ${{ steps.usuario_rdp.outputs.USUARIO }}"
+          Write-Host "Senha: ${{ steps.usuario_rdp.outputs.SENHA }}"
+          Write-Host "Porta: 3389"
